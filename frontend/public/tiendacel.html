@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --gd:#052814;--gm:#0b4d22;--gl:#166534;--ga:#22c55e;--gs:#dcfce7;
+      --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g500:#64748b;--g700:#334155;--g800:#1e293b;
+      --red:#be123c;--rl:#fff1f2;--rb:#fecdd3;--blue:#0369a1;--bl:#f0f9ff;--bb:#bae6fd;
+      --fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+      --r:16px;--rs:10px;--sh:0 4px 24px rgba(5,40,20,.10);--shl:0 12px 40px rgba(5,40,20,.16)
+    }
+    body{font-family:var(--fb);background:#eef5f0;min-height:100vh;color:var(--g800)}
+
+    /* SPLASH */
+    #splash{position:fixed;inset:0;background:linear-gradient(135deg,var(--gd),var(--gm) 55%,var(--gl));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:9999;transition:opacity .6s,transform .6s}
+    #splash.oculto{opacity:0;transform:scale(1.04);pointer-events:none}
+    .sp-logo{font-size:64px;animation:pulse 2s ease-in-out infinite}
+    .sp-title{color:#fff;font-family:var(--fh);font-size:2em;font-weight:800;letter-spacing:3px}
+    .sp-ring{width:52px;height:52px;border-radius:50%;border:4px solid rgba(255,255,255,.2);border-top:4px solid #fff;animation:spin .9s linear infinite}
+    .sp-msg{color:rgba(255,255,255,.8);font-size:.95em;text-align:center}
+    .sp-btn{display:none;margin-top:8px;padding:13px 34px;background:#fff;color:var(--gm);border:none;border-radius:12px;font-family:var(--fh);font-size:1em;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+    /* TOAST */
+    #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gm);color:#fff;padding:12px 22px;border-radius:12px;font-family:var(--fh);font-weight:700;font-size:14px;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:transform .3s ease,opacity .3s ease;opacity:0;white-space:nowrap}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    #toast.error-toast{background:var(--red)}
+
+    /* LOGIN */
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#eef5f0,#d1fae5)}
+    .card{width:460px;background:#fff;padding:40px;border-radius:24px;box-shadow:var(--shl)}
+    .card-logo{text-align:center;margin-bottom:22px}
+    .card-logo .lg-icon{font-size:48px}
+    .card-logo h1{font-family:var(--fh);font-size:1.9em;font-weight:800;color:var(--gm);margin-top:4px}
+    .card-logo p{color:var(--g500);font-size:13px;margin-top:2px}
+    .quick-modules{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:26px}
+    .qm{background:var(--gs);border-radius:var(--rs);padding:11px 6px;text-align:center;border:1.5px solid #bbf7d0}
+    .qm .qi{font-size:20px;display:block;margin-bottom:3px}
+    .qm span{font-size:10px;font-weight:700;color:var(--gm);font-family:var(--fh);text-transform:uppercase;letter-spacing:.5px}
+    .tabs{display:flex;gap:6px;margin-bottom:22px;background:var(--g100);border-radius:12px;padding:4px}
+    .tab{flex:1;padding:11px;text-align:center;border-radius:9px;cursor:pointer;font-weight:700;font-size:14px;color:var(--g500);font-family:var(--fh);transition:all .2s}
+    .tab.active{background:var(--gm);color:#fff}
+    h2{color:var(--gm);font-family:var(--fh);font-size:19px;margin-bottom:18px;font-weight:700}
+    .field{margin-bottom:13px}
+    .field label{display:block;font-size:11px;font-weight:700;color:var(--g500);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+    .field input,.field select{width:100%;padding:12px 14px;border:1.5px solid var(--g200);border-radius:var(--rs);font-size:14px;font-family:var(--fb);outline:none;background:var(--g50);transition:border-color .2s}
+    .field input:focus,.field select:focus{border-color:var(--ga)}
+    .btn-main{width:100%;padding:14px;border:none;border-radius:var(--rs);background:var(--gm);color:#fff;font-family:var(--fh);font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;transition:background .2s,transform .1s}
+    .btn-main:hover{background:var(--gl)}
+    .msg{margin-top:11px;font-size:13px;padding:10px 13px;border-radius:9px;display:none}
+    .msg.ok{display:block;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+    .msg.error{display:block;background:var(--rl);color:var(--red);border:1px solid var(--rb)}
+    .msg.info{display:block;background:var(--bl);color:var(--blue);border:1px solid var(--bb)}
+
+    /* PANEL */
+    .layout{display:flex;min-height:100vh}
+    .sidebar{width:256px;min-height:100vh;background:linear-gradient(180deg,var(--gd),#031a0d);color:#fff;padding:20px 13px;display:flex;flex-direction:column;flex-shrink:0}
+    .sb-brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+    .sb-brand .bi{font-size:26px}
+    .sb-brand h1{font-family:var(--fh);font-size:1.35em;font-weight:800}
+    .sb-brand p{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+    .user-badge{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:13px;border-radius:var(--rs);margin-bottom:16px}
+    .user-badge strong{display:block;font-size:14px;font-family:var(--fh)}
+    .role-tag{display:inline-block;margin-top:6px;background:var(--ga);color:var(--gd);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--fh)}
+    .nav-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin:10px 0 5px;font-family:var(--fh)}
+    .nav-btn{width:100%;padding:11px 12px;margin-bottom:3px;border:none;border-radius:9px;background:transparent;color:rgba(255,255,255,.65);text-align:left;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--fh);transition:all .2s;display:flex;align-items:center;gap:8px}
+    .nav-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+    .nav-btn.active{background:rgba(255,255,255,.2);color:#fff}
+    .nav-btn.locked{opacity:.28;cursor:not-allowed}
+    .btn-logout{margin-top:auto;width:100%;padding:11px;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:transparent;color:rgba(255,255,255,.65);font-weight:700;font-family:var(--fh);font-size:13px;cursor:pointer;transition:all .2s}
+    .btn-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+    .main{flex:1;padding:26px;overflow-x:auto;background:#eef5f0}
+    .banner{background:linear-gradient(135deg,var(--gm),var(--gl));color:#fff;padding:26px;border-radius:var(--r);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:var(--sh)}
+    .banner h2{color:#fff;font-family:var(--fh);font-size:1.35em;margin-bottom:4px}
+    .banner p{opacity:.8;font-size:13px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;margin-bottom:20px}
+    .stat-card{background:#fff;padding:18px;border-radius:var(--rs);box-shadow:var(--sh);border-top:3px solid var(--ga)}
+    .stat-card h3{font-size:10px;color:var(--g500);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;font-family:var(--fh)}
+    .stat-card .num{font-size:30px;font-weight:800;color:var(--gm);font-family:var(--fh)}
+    .module-card{background:#fff;padding:22px;border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px}
+    .module-card h3{font-size:17px;font-family:var(--fh);color:var(--gm);margin-bottom:15px;font-weight:700}
+    .toolbar{display:flex;gap:9px;margin-bottom:13px;flex-wrap:wrap;align-items:center}
+    .toolbar input,.toolbar select{padding:10px 12px;border:1.5px solid var(--g200);border-radius:9px;font-family:var(--fb);font-size:13px;min-width:190px;outline:none;background:var(--g50);transition:border-color .2s}
+    .toolbar input:focus,.toolbar select:focus{border-color:var(--ga)}
+    .mini-btn{padding:9px 15px;border:none;border-radius:9px;background:var(--gm);color:#fff;font-weight:700;font-family:var(--fh);font-size:13px;cursor:pointer;transition:background .2s;white-space:nowrap}
+    .mini-btn:hover{background:var(--gl)}
+    .mini-btn.danger{background:var(--red)}.mini-btn.danger:hover{background:#9f1239}
+    .mini-btn.warn{background:#b45309}.mini-btn.warn:hover{background:#92400e}
+    .mini-btn.secondary{background:var(--g500)}.mini-btn.secondary:hover{background:var(--g700)}
+    .mini-btn.success{background:var(--ga);color:var(--gd)}
+    .mini-btn:disabled{opacity:.5;cursor:not-allowed}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead tr{background:var(--g100)}
+    thead th{padding:11px 12px;text-align:left;font-weight:700;color:var(--g700);font-size:12px;font-family:var(--fh);text-transform:uppercase;letter-spacing:.4px}
+    tbody tr{border-bottom:1px solid var(--g100);transition:background .15s}
+    tbody tr:hover{background:var(--g50)}
+    tbody td{padding:10px 12px;color:var(--g500);vertical-align:middle}
+    .no-data{text-align:center;color:var(--g400);padding:28px !important}
+    .access-denied{background:var(--rl);color:var(--red);padding:22px;border-radius:var(--rs);border:1px solid var(--rb)}
+    .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--fh)}
+    .tag.completada,.tag.pagada,.tag.activo{background:var(--gs);color:var(--gl)}
+    .tag.pendiente{background:#fef3c7;color:#b45309}
+    .tag.suspendido,.tag.cancelada{background:var(--rl);color:var(--red)}
+
+    /* FORM INLINE */
+    .form-inline{background:var(--gs);border:1.5px solid #bbf7d0;border-radius:var(--rs);padding:16px;margin-bottom:14px;display:none}
+    .form-inline.visible{display:block}
+    .fi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:9px}
+    .fi-grid input,.fi-grid select,.fi-grid textarea{width:100%;padding:9px 12px;border:1.5px solid var(--g200);border-radius:9px;font-family:var(--fb);font-size:13px;background:#fff;outline:none;transition:border-color .2s}
+    .fi-grid input:focus,.fi-grid select:focus{border-color:var(--ga)}
+    .fi-actions{margin-top:11px;display:flex;gap:8px;align-items:center}
+
+    /* PRODUCTOS */
+    .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+    .product-card{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--sh);border:1.5px solid var(--g200);transition:transform .2s,box-shadow .2s}
+    .product-card:hover{transform:translateY(-3px);box-shadow:var(--shl)}
+    .product-img{height:130px;background:linear-gradient(135deg,#d1fae5,#f0fdf4);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:50px;margin-bottom:12px;overflow:hidden}
+    .product-img img{width:100%;height:100%;object-fit:contain;background:#fff;padding:8px}
+    .product-card h4{color:var(--gm);font-family:var(--fh);margin-bottom:4px;font-size:15px}
+    .product-card .desc{color:var(--g500);font-size:12px;margin-bottom:6px;line-height:1.4}
+    .price{font-size:19px;font-weight:800;color:var(--gl);font-family:var(--fh);margin:7px 0}
+    .stock-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--fh)}
+    .stock-badge.ok{background:var(--gs);color:var(--gl)}
+    .stock-badge.low{background:#fef3c7;color:#b45309}
+    .stock-badge.zero{background:var(--rl);color:var(--red)}
+    .product-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+
+    /* FICHA */
+    .ficha-wrap{background:#fff;border-radius:var(--r);padding:26px;box-shadow:var(--sh)}
+    .ficha-header{display:flex;gap:22px;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap}
+    .ficha-img{width:155px;height:155px;border-radius:var(--rs);background:linear-gradient(135deg,#d1fae5,#f0fdf4);display:flex;align-items:center;justify-content:center;font-size:68px;flex-shrink:0;overflow:hidden}
+    .ficha-img img{width:100%;height:100%;object-fit:contain;background:#fff;padding:10px}
+    .ficha-info h2{font-family:var(--fh);color:var(--gm);font-size:1.45em;margin-bottom:5px}
+    .ficha-info .ref{color:var(--g400);font-size:13px;margin-bottom:9px}
+    .ficha-info .precio-big{font-size:1.9em;font-weight:800;font-family:var(--fh);color:var(--gl)}
+    .ficha-table{width:100%;border-collapse:collapse;margin-top:18px}
+    .ficha-table tr{border-bottom:1px solid var(--g100)}
+    .ficha-table td{padding:10px 12px;font-size:14px}
+    .ficha-table td:first-child{font-weight:700;color:var(--g700);width:40%;font-family:var(--fh)}
+
+    /* CHART */
+    .chart-wrap{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:16px}
+    .chart-wrap h3{font-family:var(--fh);color:var(--gm);font-size:15px;margin-bottom:14px}
+    .bar-chart{display:flex;align-items:flex-end;gap:12px;height:170px;padding-bottom:22px;border-bottom:2px solid var(--g200)}
+    .bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+    .bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--ga),var(--gm));min-height:4px;transition:height .6s ease}
+    .bar-val{font-size:10px;font-weight:700;color:var(--gm);font-family:var(--fh)}
+    .bar-label{font-size:10px;color:var(--g400);white-space:nowrap;margin-top:3px}
+
+    /* SPINNER inline */
+    .spin-sm{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top:2px solid #fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+
+    @media(max-width:800px){.layout{flex-direction:column}.sidebar{width:100%;min-height:auto}.banner{flex-direction:column}}
+  </style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-logo">📱</div>
+  <div class="sp-title">TiendaCel</div>
+  <div class="sp-ring" id="spRing"></div>
+  <div class="sp-msg" id="spMsg">Verificando sesión...</div>
+  <button class="sp-btn" id="spBtn">Entrar al panel</button>
+</div>
+
+<!-- LOGIN -->
+<div class="wrap" id="loginScreen" style="display:none">
+  <div class="card">
+    <div class="card-logo"><div class="lg-icon">📱</div><h1>TiendaCel</h1><p>Sistema comercial de gestión</p></div>
+    <div class="quick-modules">
+      <div class="qm"><span class="qi">🛒</span><span>Ventas</span></div>
+      <div class="qm"><span class="qi">📦</span><span>Productos</span></div>
+      <div class="qm"><span class="qi">👥</span><span>Empleados</span></div>
+      <div class="qm"><span class="qi">📊</span><span>Inventario</span></div>
+      <div class="qm"><span class="qi">📄</span><span>Informes</span></div>
+      <div class="qm"><span class="qi">🏢</span><span>Sedes</span></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" id="tabLogin">Iniciar sesión</div>
+      <div class="tab" id="tabReg">Registrar</div>
+    </div>
+    <div id="loginBox">
+      <h2>Acceso</h2>
+      <div class="field"><label>Usuario o correo</label><input type="text" id="usuario" placeholder="Tu usuario"></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="password" placeholder="••••••••"></div>
+      <button class="btn-main" id="btnLogin">Entrar</button>
+      <div id="msgLogin" class="msg"></div>
+    </div>
+    <div id="regBox" style="display:none">
+      <h2>Registrar usuario</h2>
+      <div class="field"><label>Usuario</label><input type="text" id="rUsr" placeholder="Usuario"></div>
+      <div class="field"><label>Contraseña</label><input type="text" id="rPwd" placeholder="Contraseña"></div>
+      <div class="field"><label>Rol</label>
+        <select id="rRol"><option value="">Selecciona</option><option value="admin">admin</option><option value="vendedor">vendedor</option><option value="auxiliar">auxiliar</option><option value="encargado">encargado</option><option value="coordinador">coordinador</option><option value="usuario">usuario</option><option value="cliente">cliente</option></select>
+      </div>
+      <div class="field"><label>Token</label><input type="text" id="rTok" placeholder="Token único"></div>
+      <div class="field"><label>Nombre completo</label><input type="text" id="rNom" placeholder="Nombre y apellido"></div>
+      <div class="field"><label>ID Relación</label><input type="text" id="rRel" placeholder="ID relación"></div>
+      <button class="btn-main" id="btnReg">Guardar usuario</button>
+      <div id="msgReg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div class="layout" id="panelScreen" style="display:none">
+  <aside class="sidebar">
+    <div class="sb-brand"><div class="bi">📱</div><div><h1>TiendaCel</h1><p>Sistema comercial</p></div></div>
+    <div class="user-badge"><strong id="badgeNom">—</strong><div class="role-tag" id="badgeRol">—</div></div>
+    <div class="nav-title">Módulos</div>
+    <nav id="navMenu"></nav>
+    <button class="btn-logout" onclick="cerrarSesion()">↩ Cerrar sesión</button>
+  </aside>
+  <main class="main">
+    <div class="banner">
+      <div><h2>Bienvenido a TiendaCel 👋</h2><p>Panel de gestión comercial integrado con Google Sheets.</p></div>
+      <div style="font-size:42px">📊</div>
+    </div>
+    <div id="contenidoModulo"></div>
+  </main>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════
+var PERMISOS = {
+  admin:       ['home','ventas','productos','empleado','inventario','informes','sedes','usuarios','clientes'],
+  encargado:   ['home','ventas','productos','empleado','inventario','informes','sedes','clientes'],
+  coordinador: ['home','ventas','productos','empleado','inventario','informes','sedes','clientes'],
+  vendedor:    ['home','ventas','productos'],
+  auxiliar:    ['home','ventas','productos'],
+  usuario:     ['home','productos'],
+  cliente:     ['home','productos']
+};
+
+var MODULOS = [
+  {id:'home',      texto:'Home',      icon:'🏠'},
+  {id:'ventas',    texto:'Ventas',    icon:'🛒'},
+  {id:'productos', texto:'Productos', icon:'📦'},
+  {id:'clientes',  texto:'Clientes',  icon:'👤'},
+  {id:'empleado',  texto:'Empleados', icon:'👥'},
+  {id:'inventario',texto:'Inventario',icon:'📊'},
+  {id:'informes',  texto:'Informes',  icon:'📄'},
+  {id:'sedes',     texto:'Sedes',     icon:'🏢'},
+  {id:'usuarios',  texto:'Usuarios',  icon:'🔑'}
+];
+
+var SESSION   = null;
+var MODULO_ACTUAL = 'home';
+
+// ══════════════════════════════════════════════════
+// UTILIDADES
+// ══════════════════════════════════════════════════
+function lim(t){return String(t||'').toLowerCase().trim()}
+function fn(n){return(parseFloat(String(n).replace(/[^0-9.]/g,''))||0).toLocaleString('es-CO')}
+function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
+function sv(id,val){var e=document.getElementById(id);if(e)e.value=val}
+function tieneAcceso(rol,mod){return PERMISOS[rol]&&PERMISOS[rol].indexOf(mod)!==-1}
+function esGestor(rol){return['admin','encargado','coordinador'].indexOf(rol)!==-1}
+
+function setMsg(id,tipo,txt){
+  var e=document.getElementById(id);if(!e)return;
+  e.className='msg '+tipo;e.textContent=txt;
+}
+
+var _toastTimer;
+function toast(msg,tipo){
+  var el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='show'+(tipo==='error'?' error-toast':'');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){el.className=''},2800);
+}
+
+function toggleForm(id){
+  var e=document.getElementById(id);if(!e)return;
+  e.classList.toggle('visible');
+}
+
+function imgTag(url,w,h){
+  w=w||48;h=h||48;
+  if(!url||!url.startsWith('http'))return'📱';
+  return'<img src="'+url+'" referrerpolicy="no-referrer" style="width:'+w+'px;height:'+h+'px;object-fit:contain;background:#fff;padding:4px;border-radius:8px;border:1.5px solid #e2e8f0;" onerror="this.outerHTML=\'📱\'">';
+}
+
+// ══════════════════════════════════════════════════
+// LLAMADA CENTRAL — reemplaza google.script.run
+// ══════════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby5sJD1zP1mD_48qQ3dZKueHYEnkXSwJxcJ50ghJNEAguFUB012N_PYIyJe_PgfcQLuog/exec';
+
+async function llamarAppsScript(nombreFuncion, datos, ok, err) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        accion: nombreFuncion,
+        datos: datos
+      })
+    });
+
+    const res = await response.json();
+
+    if (ok) ok(res);
+    return res;
+
+  } catch (e) {
+    if (err) err(e);
+    else toast('Error: ' + (e.message || '?'), 'error');
+  }
+}
+
+// Recarga datos desde Sheets y refresca el módulo actual
+function recargarYRefrescar(moduloTarget){
+  var target = moduloTarget || MODULO_ACTUAL;
+  toast('🔄 Sincronizando con Sheets...');
+  llamarAppsScript('obtenerDatosCompletos', {usuario: SESSION.user.usuario, rol: SESSION.user.rol},
+    function(res){
+      if(res && res.success){
+        SESSION.data = res.data;
+        mostrarModulo(target);
+        toast('✅ Datos actualizados');
+      } else {
+        toast('No se pudo recargar: '+(res?res.message:'error'),'error');
+      }
+    },
+    function(e){
+      // En demo solo refrescamos visualmente sin ir a Sheets
+      mostrarModulo(target);
+      toast('✅ Actualizado localmente');
+    }
+  );
+}
+
+// ══════════════════════════════════════════════════
+// SPLASH / SESIÓN GOOGLE
+// ══════════════════════════════════════════════════
+window.onload = function(){
+  var t=setTimeout(mostrarLogin,9000);
+  try{
+    llamarAppsScript('verificarSesionGoogle', null,
+      function(res){
+        clearTimeout(t);
+        if(res&&res.success&&res.userData&&res.userData.success) mostrarBotonEntrar(res.nombre,res.userData);
+        else mostrarLogin();
+      },
+      function(){clearTimeout(t);mostrarLogin();}
+    );
+  }catch(e){clearTimeout(t);mostrarLogin();}
+};
+
+function mostrarLogin(){
+  document.getElementById('splash').classList.add('oculto');
+  setTimeout(function(){
+    document.getElementById('splash').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+  },650);
+}
+
+function mostrarBotonEntrar(nombre,fullRes){
+  document.getElementById('spRing').style.display='none';
+  document.getElementById('spMsg').textContent='¡Bienvenido, '+nombre+'! 👋';
+  var btn=document.getElementById('spBtn');
+  btn.style.display='block';
+  btn.onclick=function(){
+    document.getElementById('splash').classList.add('oculto');
+    setTimeout(function(){document.getElementById('splash').style.display='none';iniciarPanel(fullRes.user,fullRes.data);},600);
+  };
+}
+
+// TABS
+document.getElementById('tabLogin').onclick=function(){this.classList.add('active');document.getElementById('tabReg').classList.remove('active');document.getElementById('loginBox').style.display='block';document.getElementById('regBox').style.display='none';};
+document.getElementById('tabReg').onclick=function(){this.classList.add('active');document.getElementById('tabLogin').classList.remove('active');document.getElementById('regBox').style.display='block';document.getElementById('loginBox').style.display='none';};
+
+// LOGIN
+document.getElementById('btnLogin').onclick=function(){
+  var btn=this;
+  var usr=v('usuario'),pass=v('password');
+  if(!usr){setMsg('msgLogin','error','Ingresa usuario o correo.');return;}
+  if(!pass&&usr.toLowerCase()!=='martinmontoya.1247@gmail.com'){setMsg('msgLogin','error','Ingresa tu contraseña.');return;}
+  setMsg('msgLogin','info','⏳ Verificando...');btn.disabled=true;btn.textContent='Verificando...';
+  llamarAppsScript('iniciarSistema', {user:usr,pass:pass},
+    function(res){
+      btn.disabled=false;btn.textContent='Entrar';
+      if(!res||!res.success){setMsg('msgLogin','error',res?res.message:'Respuesta inválida.');return;}
+      setMsg('msgLogin','ok','✅ Ingreso exitoso.');
+      setTimeout(function(){iniciarPanel(res.user,res.data);},400);
+    },
+    function(e){
+      btn.disabled=false;btn.textContent='Entrar';
+      var demo=getDemoData(usr,pass);
+      if(demo){setMsg('msgLogin','ok','✅ Modo demo.');setTimeout(function(){iniciarPanel(demo.user,demo.data);},400);}
+      else{setMsg('msgLogin','error','Usuario o contraseña incorrectos.');}
+    }
+  );
+};
+document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('btnLogin').click();});
+
+// REGISTRAR USUARIO
+document.getElementById('btnReg').onclick=function(){
+  var btn=this;
+  var d={usuario:v('rUsr'),contrasena:v('rPwd'),rol:v('rRol'),token:v('rTok'),nombre:v('rNom'),idRelacion:v('rRel')};
+  if(!d.usuario||!d.contrasena||!d.rol||!d.token||!d.nombre||!d.idRelacion){setMsg('msgReg','error','Todos los campos son obligatorios.');return;}
+  setMsg('msgReg','info','⏳ Guardando...');btn.disabled=true;btn.textContent='Guardando...';
+  llamarAppsScript('registrarUsuario', d,
+    function(res){btn.disabled=false;btn.textContent='Guardar usuario';setMsg('msgReg',res&&res.success?'ok':'error',res?res.message:'Error.');},
+    function(e){btn.disabled=false;btn.textContent='Guardar usuario';setMsg('msgReg','error',e.message||'Sin conexión a Sheets.');}
+  );
+};
+
+// ══════════════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════════════
+function getDemoData(user){
+  var users={'admin1':{usuario:'admin1',rol:'admin',nombre:'Juan Admin',token:'tok001',idRelacion:'1'},
+             'vendedor1':{usuario:'vendedor1',rol:'vendedor',nombre:'Ana Vendedor',token:'tok002',idRelacion:'2'},
+             'encargado1':{usuario:'encargado1',rol:'encargado',nombre:'Luis Encargado',token:'tok004',idRelacion:'3'},
+             'cliente1':{usuario:'cliente1',rol:'cliente',nombre:'Carlos Cliente',token:'tok003',idRelacion:'1'}};
+  var u=users[user];if(!u)return null;
+  var imgs=['https://drive.google.com/thumbnail?sz=w400&id=1wDq8_EB2vXBE0gOJkA1pw4eWE9HFxXg8',
+            'https://drive.google.com/thumbnail?sz=w400&id=1H7maiPN7vHv6Qoln8VckRApnWErovTbJ',
+            'https://drive.google.com/thumbnail?sz=w400&id=1jW6F90p_3CFwFT_Uhg9LZGgbmy-IgPZa'];
+  var productos=[['1','Samsung','Galaxy S24','Smartphone Samsung gama alta','320000','10',imgs[0]],
+                 ['2','Apple','iPhone 15','Smartphone Apple premium','600000','5',imgs[1]],
+                 ['3','Xiaomi','Redmi Note 13','Smartphone Xiaomi','120000','15',imgs[2]]];
+  var clientes=[['1','Carlos Cliente','12345678','3001112233','carlos@gmail.com','Calle 10'],
+                ['2','Luisa Torres','87654321','3019998877','luisa@gmail.com','Carrera 20'],
+                ['3','Pedro Gómez','45678912','3024561234','pedro@gmail.com','Avenida 30']];
+  var ventas=[['1','2025-04-01','320000','completada','1','vendedor1'],
+              ['2','2025-04-02','600000','pendiente','2','vendedor1'],
+              ['3','2025-04-03','120000','completada','3','admin1']];
+  var empleados=[['1','Ana Vendedor','Vendedor','Sede Norte','3100000001','ana@tc.com'],
+                 ['2','Luis Pérez','Auxiliar','Sede Sur','3100000002','luis@tc.com']];
+  var inventario=[['1','Samsung Galaxy S24','10','5','activo'],['2','iPhone 15','5','2','activo'],['3','Redmi Note 13','15','8','activo']];
+  var informes=[['2025-04-01','ventas','Resumen ventas abril','vendedor1'],['2025-04-02','inventario','Stock actualizado','admin1']];
+  var sedes=[['1','Sede Norte','Bogotá','Calle 10 #20-30','Luis Encargado'],['2','Sede Sur','Medellín','Cra 50 #80-90','María López']];
+  var ficha=[['1','1','RAM','8GB'],['2','1','Almacenamiento','256GB'],['3','1','Pantalla','6.7" AMOLED'],['4','1','Batería','4000mAh'],
+             ['5','2','RAM','8GB'],['6','2','Almacenamiento','512GB'],['7','2','Pantalla','6.1" OLED'],['8','2','Batería','3279mAh'],
+             ['9','3','RAM','6GB'],['10','3','Almacenamiento','128GB'],['11','3','Pantalla','6.67" IPS'],['12','3','Batería','5000mAh']];
+  return{user:u,data:{
+    headers:{clientes:['id_cliente','nombre','documento','telefono','correo','direccion'],
+             productos:['id_producto','marca','modelo','descripcion','precio','stock','imagen'],
+             ventas:['id_venta','fecha','total','estado','id_cliente','usuario_vendedor'],
+             empleado:['id_empleado','nombre','cargo','sede','telefono','correo'],
+             inventario:['id_producto','nombre','stock_actual','stock_minimo','estado'],
+             informes:['fecha','tipo','descripcion','responsable'],
+             sedes:['id_sede','nombre','ciudad','direccion','encargado'],
+             ficha_tecnica:['id_ficha','id_producto','caracteristica','valor'],
+             usuarios:['usuario','rol','token','nombre','id_relacion']},
+    clientes:clientes,productos:productos,ventas:ventas,facturas:[],
+    empleado:empleados,inventario:inventario,informes:informes,sedes:sedes,
+    ficha_tecnica:ficha,usuarios:[],
+    resumen:{totalClientes:clientes.length,totalProductos:productos.length,totalVentas:ventas.length,totalFacturas:3,totalEmpleados:empleados.length,totalSedes:sedes.length}
+  }};
+}
+
+// ══════════════════════════════════════════════════
+// INICIAR PANEL
+// ══════════════════════════════════════════════════
+function iniciarPanel(user,data){
+  SESSION={user:user,data:data};
+  document.getElementById('badgeNom').textContent=user.nombre;
+  document.getElementById('badgeRol').textContent=user.rol;
+  var nav=document.getElementById('navMenu');nav.innerHTML='';
+  MODULOS.forEach(function(m){
+    var acc=tieneAcceso(user.rol,m.id);
+    var btn=document.createElement('button');
+    btn.className='nav-btn'+(acc?'':' locked');btn.id='nav_'+m.id;
+    btn.innerHTML=m.icon+' '+m.texto;
+    if(acc)btn.onclick=(function(id){return function(){mostrarModulo(id);};})(m.id);
+    nav.appendChild(btn);
+  });
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('panelScreen').style.display='flex';
+  mostrarModulo('home');
+}
+
+function mostrarModulo(mod){
+  if(!SESSION)return;
+  MODULO_ACTUAL=mod;
+  MODULOS.forEach(function(m){var b=document.getElementById('nav_'+m.id);if(b)b.classList.toggle('active',m.id===mod);});
+  if(!tieneAcceso(SESSION.user.rol,mod)){
+    document.getElementById('contenidoModulo').innerHTML='<div class="access-denied"><h3>🔒 Acceso bloqueado</h3><p>Tu rol <strong>'+SESSION.user.rol+'</strong> no tiene permiso aquí.</p></div>';
+    return;
+  }
+  var d=SESSION.data,u=SESSION.user;
+  switch(mod){
+    case'home':       renderHome(d,u);break;
+    case'ventas':     renderVentas(d,u);break;
+    case'productos':  renderProductos(d,u);break;
+    case'clientes':   renderClientes(d,u);break;
+    case'empleado':   renderEmpleados(d,u);break;
+    case'inventario': renderInventario(d,u);break;
+    case'informes':   renderInformes(d,u);break;
+    case'sedes':      renderSedes(d,u);break;
+    case'usuarios':   renderUsuarios(d,u);break;
+  }
+}
+
+// ══════════════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════════════
+function renderHome(d,u){
+  document.getElementById('contenidoModulo').innerHTML=
+    '<div class="stats-grid">'+
+      cardStat('Clientes',d.resumen.totalClientes)+cardStat('Productos',d.resumen.totalProductos)+
+      cardStat('Ventas',d.resumen.totalVentas)+cardStat('Facturas',d.resumen.totalFacturas)+
+      cardStat('Empleados',d.resumen.totalEmpleados)+cardStat('Sedes',d.resumen.totalSedes)+
+    '</div>'+
+    '<div class="module-card"><h3>🏠 Home</h3>'+
+      '<p><strong>Usuario:</strong> '+u.nombre+'</p><p><strong>Rol:</strong> '+u.rol+'</p><p><strong>Token:</strong> '+u.token+'</p>'+
+      '<br><p style="color:var(--g500);font-size:14px;">Todas las acciones (agregar, editar, eliminar) se sincronizan automáticamente con Google Sheets en tiempo real.</p>'+
+    '</div>';
+}
+
+// ══════════════════════════════════════════════════
+// TABLA GENÉRICA
+// ══════════════════════════════════════════════════
+function tabla(id,headers,rows){
+  headers=headers||[];rows=rows||[];
+  if(!headers.length)headers=['Col1','Col2'];
+  var th=headers.map(function(h){return'<th>'+h+'</th>';}).join('');
+  var tb=rows.length
+    ?rows.map(function(r){return'<tr>'+(Array.isArray(r)?r:[]).map(function(c){return'<td>'+(c!==null&&c!==undefined&&c!==''?c:'—')+'</td>';}).join('')+'</tr>';}).join('')
+    :'<tr><td class="no-data" colspan="'+headers.length+'">Sin datos registrados</td></tr>';
+  return'<div style="overflow-x:auto"><table id="'+id+'"><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table></div>';
+}
+
+window.filtrarTabla=function(id,val){
+  val=lim(val);var t=document.getElementById(id);if(!t)return;
+  t.querySelectorAll('tbody tr').forEach(function(r){r.style.display=lim(r.innerText).indexOf(val)!==-1?'':'none';});
+};
+
+// ══════════════════════════════════════════════════
+// VENTAS
+// ══════════════════════════════════════════════════
+function renderVentas(d,u){
+  var ventas=d.ventas||[];var esg=esGestor(u.rol);
+  var html='<div class="module-card"><h3>🛒 Ventas</h3>';
+  html+='<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tVentas\',this.value)">';
+  if(esg){
+    html+='<select onchange="filtrarEstadoVentas(this.value)"><option value="">Todos</option><option value="completada">Completada</option><option value="pendiente">Pendiente</option><option value="cancelada">Cancelada</option></select>';
+    html+='<button class="mini-btn" onclick="toggleForm(\'fVenta\')">+ Nueva venta</button>';
+  }
+  html+='</div>';
+
+  if(esg){
+    var tot=ventas.reduce(function(a,v){return a+(parseFloat(v[2])||0);},0);
+    html+='<div class="stats-grid" style="margin-bottom:14px;">'+
+      cardStat('Total',ventas.length)+cardStat('Completadas',ventas.filter(function(v){return v[3]==='completada';}).length)+
+      cardStat('Pendientes',ventas.filter(function(v){return v[3]==='pendiente';}).length)+cardStat('$ Total','$'+fn(tot))+
+    '</div>';
+
+    html+='<div class="form-inline" id="fVenta">'+
+      '<div class="fi-grid">'+
+        '<input type="text" id="vtProducto" placeholder="ID Producto">'+
+        '<input type="number" id="vtCantidad" placeholder="Cantidad">'+
+        '<input type="text" id="vtNombreCliente" placeholder="Nombre cliente">'+
+        '<input type="text" id="vtCliente" placeholder="ID Cliente" value="1">'+
+        '<input type="text" id="vtVendedor" placeholder="Usuario vendedor" value="'+u.usuario+'">'+
+      '</div>'+
+      '<div class="fi-actions"><button class="mini-btn" onclick="crearVenta()">💾 Guardar venta completa</button><button class="mini-btn secondary" onclick="toggleForm(\'fVenta\')">Cancelar</button></div>'+
+      '<div id="msgVenta" class="msg"></div></div>';
+  }
+
+  var rows=ventas.map(function(v){
+    var r=v.map(function(c,i){return i===3?'<span class="tag '+c+'">'+c+'</span>':(c||'—');});
+    if(esg) r.push('<button class="mini-btn danger" style="padding:4px 9px;font-size:11px;" onclick="eliminarVenta(\''+v[0]+'\')">Eliminar</button>');
+    return r;
+  });
+  var h=(d.headers.ventas||[]).concat(esg?['Acciones']:[]);
+  html+=tabla('tVentas',h,rows)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+window.filtrarEstadoVentas=function(val){
+  var t=document.getElementById('tVentas');if(!t)return;
+  t.querySelectorAll('tbody tr').forEach(function(r){r.style.display=!val||lim(r.innerText).indexOf(val)!==-1?'':'none';});
+};
+
+window.crearVenta=function(){
+  var btn=document.querySelector('#fVenta .mini-btn');if(btn)btn.disabled=true;
+  var d={
+    idProducto:v('vtProducto'),
+    cantidad:Number(v('vtCantidad')),
+    cliente:v('vtNombreCliente'),
+    idCliente:v('vtCliente') || '1',
+    usuarioVendedor:v('vtVendedor') || SESSION.user.usuario
+  };
+  if(!d.idProducto||!d.cantidad||!d.cliente){setMsg('msgVenta','error','ID producto, cantidad y cliente son obligatorios.');if(btn)btn.disabled=false;return;}
+  setMsg('msgVenta','info','Ejecutando SP de venta y trigger de inventario...');
+  llamarAppsScript('crearVenta', d,
+    function(res){
+      if(res&&res.success){
+        toast('✅ '+res.message);
+        toggleForm('fVenta');
+        recargarYRefrescar('ventas');
+      }else{
+        setMsg('msgVenta','error',res?res.message:'Error al guardar');if(btn)btn.disabled=false;
+      }
+    },
+    function(e){
+      setMsg('msgVenta','error',e.message||'No se pudo conectar con Apps Script.');if(btn)btn.disabled=false;
+    }
+  );
+};
+
+window.eliminarVenta=function(id){
+  if(!confirm('¿Eliminar venta ID '+id+'?'))return;
+  llamarAppsScript('eliminarVenta', id,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.ventas=SESSION.data.ventas.filter(function(v){return v[0]!=id;});
+        toast('🗑 Venta eliminada de Sheets');mostrarModulo('ventas');
+      }else{toast(res?res.message:'Error','error');}
+    },
+    function(){
+      SESSION.data.ventas=SESSION.data.ventas.filter(function(v){return v[0]!=id;});
+      toast('🗑 Venta eliminada (demo)');mostrarModulo('ventas');
+    }
+  );
+};
+
+// ══════════════════════════════════════════════════
+// PRODUCTOS — tabla gestores / catálogo clientes
+// ══════════════════════════════════════════════════
+function renderProductos(d,u){
+  if(u.rol==='cliente'||u.rol==='usuario'){renderCatalogo(d,u);return;}
+  var esg=esGestor(u.rol);var rows=d.productos||[];
+  var html='<div class="module-card"><h3>📦 Productos</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tProd\',this.value)">'+
+    (esg?'<button class="mini-btn" onclick="toggleForm(\'fProd\')">+ Agregar producto</button>':'')+
+    '</div>';
+
+  if(esg){
+    html+='<div class="form-inline" id="fProd"><div class="fi-grid">'+
+      '<input type="text" id="pMarca" placeholder="Marca">'+
+      '<input type="text" id="pModelo" placeholder="Modelo">'+
+      '<input type="text" id="pDesc" placeholder="Descripción">'+
+      '<input type="text" id="pPrecio" placeholder="Precio">'+
+      '<input type="text" id="pStock" placeholder="Stock">'+
+      '<input type="text" id="pImagen" placeholder="URL imagen Drive">'+
+      '</div><div class="fi-actions">'+
+      '<button class="mini-btn" onclick="guardarProducto()">💾 Guardar</button>'+
+      '<button class="mini-btn secondary" onclick="toggleForm(\'fProd\')">Cancelar</button>'+
+      '</div><div id="msgProd" class="msg"></div></div>';
+  }
+
+  var headers=['ID','Marca','Modelo','Descripción','Precio','Stock','Imagen'].concat(esg?['Acciones']:[]);
+  var trows=rows.map(function(p){
+    var img=p[6]||'';
+    var imgCell=img&&img.startsWith('http')
+      ?'<img src="'+img+'" referrerpolicy="no-referrer" style="width:48px;height:48px;object-fit:contain;background:#fff;padding:4px;border-radius:8px;border:1.5px solid #e2e8f0;" onerror="this.outerHTML=\'📱\'">':'📱';
+    var fila=[p[0],p[1],p[2],p[3],'$'+fn(p[4]),p[5],imgCell];
+    if(esg) fila.push(
+      '<button class="mini-btn warn" style="padding:4px 8px;font-size:11px;" onclick="suspenderProducto(\''+p[0]+'\')">Susp.</button> '+
+      '<button class="mini-btn danger" style="padding:4px 8px;font-size:11px;" onclick="eliminarProducto(\''+p[0]+'\')">Elim.</button>'
+    );
+    return fila;
+  });
+  html+=tabla('tProd',headers,trows)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+window.guardarProducto=function(){
+  var d={marca:v('pMarca'),modelo:v('pModelo'),descripcion:v('pDesc'),precio:v('pPrecio'),stock:v('pStock'),imagen:v('pImagen')};
+  if(!d.marca||!d.modelo||!d.precio){setMsg('msgProd','error','Marca, modelo y precio son obligatorios.');return;}
+  setMsg('msgProd','info','Guardando en Sheets...');
+  llamarAppsScript('crearProducto', d,
+    function(res){
+      if(res&&res.success){
+        var id=res.id||String(Date.now());
+        SESSION.data.productos.push([id,d.marca,d.modelo,d.descripcion,d.precio,d.stock,d.imagen]);
+        SESSION.data.resumen.totalProductos=SESSION.data.productos.length;
+        toast('✅ Producto guardado en Sheets');toggleForm('fProd');mostrarModulo('productos');
+      }else{setMsg('msgProd','error',res?res.message:'Error');}
+    },
+    function(){
+      SESSION.data.productos.push([String(Date.now()),d.marca,d.modelo,d.descripcion,d.precio,d.stock,d.imagen]);
+      toast('✅ Producto agregado (demo)');toggleForm('fProd');mostrarModulo('productos');
+    }
+  );
+};
+
+window.suspenderProducto=function(id){
+  if(!confirm('¿Suspender producto ID '+id+'?'))return;
+  llamarAppsScript('suspenderProducto', id,
+    function(res){
+      if(res&&res.success){
+        var p=SESSION.data.productos.find(function(p){return p[0]==id;});
+        if(p)p[3]='[SUSPENDIDO] '+p[3];
+        toast('⚠️ Producto suspendido en Sheets');mostrarModulo('productos');
+      }else toast(res?res.message:'Error','error');
+    },
+    function(){toast('⚠️ Suspendido (demo)');mostrarModulo('productos');}
+  );
+};
+
+window.eliminarProducto=function(id){
+  if(!confirm('¿Eliminar permanentemente el producto ID '+id+'?'))return;
+  llamarAppsScript('eliminarProducto', id,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.productos=SESSION.data.productos.filter(function(p){return p[0]!=id;});
+        SESSION.data.resumen.totalProductos=SESSION.data.productos.length;
+        toast('🗑 Producto eliminado de Sheets');mostrarModulo('productos');
+      }else toast(res?res.message:'Error','error');
+    },
+    function(){
+      SESSION.data.productos=SESSION.data.productos.filter(function(p){return p[0]!=id;});
+      toast('🗑 Eliminado (demo)');mostrarModulo('productos');
+    }
+  );
+};
+
+// Catálogo clientes
+function renderCatalogo(d,u){
+  var rows=d.productos||[];
+  var html='<div class="module-card"><h3>📦 Catálogo</h3>'+
+    '<div class="toolbar"><input type="text" id="bCat" placeholder="Buscar producto..." onkeyup="filtrarCatalogo()"></div>'+
+    '<div class="product-grid" id="gridCat">';
+  rows.forEach(function(p){
+    var id=p[0],marca=p[1],modelo=p[2],desc=p[3],precio=p[4],stock=parseInt(p[5])||0,img=p[6]||'';
+    var sc=stock>5?'ok':stock>0?'low':'zero';
+    var imgH=img&&img.startsWith('http')
+      ?'<img src="'+img+'" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:contain;background:#fff;padding:8px;" onerror="this.outerHTML=\'📱\'">':'📱';
+    html+='<div class="product-card" data-search="'+lim(marca+' '+modelo+' '+desc)+'">'+
+      '<div class="product-img">'+imgH+'</div>'+
+      '<h4>'+marca+' '+modelo+'</h4><p class="desc">'+desc+'</p>'+
+      '<div class="price">$'+fn(precio)+'</div>'+
+      '<span class="stock-badge '+sc+'">Stock: '+(stock>0?stock+' un.':'Sin stock')+'</span>'+
+      '<div class="product-actions">'+
+        '<button class="mini-btn success" onclick="comprarProducto(\''+id+'\')">Comprar</button>'+
+        '<button class="mini-btn secondary" onclick="verFicha(\''+id+'\')">Ver ficha</button>'+
+      '</div></div>';
+  });
+  html+='</div></div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+
+window.comprarProducto=function(idProducto){
+  var prod=(SESSION.data.productos||[]).find(function(p){return p[0]==idProducto;});
+  if(!prod){toast('Producto no encontrado','error');return;}
+
+  var cliente=prompt('Nombre del cliente');
+  if(!cliente)return;
+
+  var cantidad=Number(prompt('Cantidad a comprar'));
+  if(!cantidad||cantidad<=0){toast('Cantidad inválida','error');return;}
+
+  llamarAppsScript('crearVenta',{
+    idProducto:idProducto,
+    cantidad:cantidad,
+    cliente:cliente,
+    idCliente:SESSION.user.idRelacion || '1',
+    usuarioVendedor:SESSION.user.usuario
+  },
+  function(res){
+    if(res&&res.success){
+      toast('✅ '+res.message);
+      recargarYRefrescar('productos');
+    }else{
+      toast(res?res.message:'Error en la venta','error');
+    }
+  },
+  function(e){
+    toast(e.message||'No se pudo conectar con Apps Script','error');
+  });
+};
+
+window.filtrarCatalogo=function(){
+  var val=lim((document.getElementById('bCat')||{value:''}).value);
+  document.querySelectorAll('.product-card').forEach(function(c){c.style.display=c.getAttribute('data-search').indexOf(val)!==-1?'':'none';});
+};
+
+window.verFicha=function(idP){
+  var d=SESSION.data,u=SESSION.user;
+  var prod=(d.productos||[]).find(function(p){return p[0]==idP;});
+  if(!prod){alert('Producto no encontrado.');return;}
+  var marca=prod[1],modelo=prod[2],desc=prod[3],precio=prod[4],stock=parseInt(prod[5])||0,img=prod[6]||'';
+  var specs=(d.ficha_tecnica||[]).filter(function(f){return f[1]==idP;});
+  var specsH=specs.length?specs.map(function(s){return'<tr><td>'+s[2]+'</td><td>'+s[3]+'</td></tr>';}).join(''):'<tr><td colspan="2" class="no-data">Sin especificaciones</td></tr>';
+  var imgH=img&&img.startsWith('http')?'<img src="'+img+'" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:contain;background:#fff;padding:10px;" onerror="this.outerHTML=\'📱\'">':'📱';
+  document.getElementById('contenidoModulo').innerHTML=
+    '<div class="ficha-wrap">'+
+    '<button class="mini-btn secondary" style="margin-bottom:14px" onclick="mostrarModulo(\'productos\')">← Volver</button>'+
+    '<div class="ficha-header">'+
+      '<div class="ficha-img">'+imgH+'</div>'+
+      '<div class="ficha-info"><h2>'+marca+' '+modelo+'</h2><p class="ref">REF-'+idP+' · '+desc+'</p>'+
+      '<div class="precio-big">$'+fn(precio)+'</div>'+
+      '<span class="stock-badge '+(stock>0?'ok':'zero')+'" style="margin-top:10px">Stock: '+stock+' un.</span>'+
+      '</div></div>'+
+    '<h3 style="font-family:var(--fh);color:var(--gm);margin-bottom:10px;font-size:15px">Especificaciones técnicas</h3>'+
+    '<table class="ficha-table"><tbody>'+specsH+'</tbody></table></div>';
+};
+
+// ══════════════════════════════════════════════════
+// CLIENTES — CRUD completo
+// ══════════════════════════════════════════════════
+function renderClientes(d,u){
+  var rows=d.clientes||[];var esg=esGestor(u.rol);
+  var html='<div class="module-card"><h3>👤 Clientes</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tCli\',this.value)">'+
+    (esg?'<button class="mini-btn" onclick="toggleForm(\'fCli\')">+ Agregar cliente</button>':'')+
+    '</div>';
+
+  if(esg){
+    html+='<div class="form-inline" id="fCli"><div class="fi-grid">'+
+      '<input type="text" id="cNom" placeholder="Nombre completo">'+
+      '<input type="text" id="cDoc" placeholder="Documento">'+
+      '<input type="text" id="cTel" placeholder="Teléfono">'+
+      '<input type="text" id="cEmail" placeholder="Correo">'+
+      '<input type="text" id="cDir" placeholder="Dirección">'+
+      '</div><div class="fi-actions">'+
+      '<button class="mini-btn" onclick="crearCliente()">💾 Guardar</button>'+
+      '<button class="mini-btn secondary" onclick="toggleForm(\'fCli\')">Cancelar</button>'+
+      '</div><div id="msgCli" class="msg"></div></div>';
+  }
+
+  var h=(d.headers.clientes||['id','nombre','doc','tel','correo','dir']).concat(esg?['Acciones']:[]);
+  var trows=rows.map(function(c){
+    var r=c.slice();
+    if(esg) r.push('<button class="mini-btn danger" style="padding:4px 8px;font-size:11px;" onclick="eliminarCliente(\''+c[0]+'\')">Eliminar</button>');
+    return r;
+  });
+  html+=tabla('tCli',h,trows)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+window.crearCliente=function(){
+  var d={nombre:v('cNom'),documento:v('cDoc'),telefono:v('cTel'),correo:v('cEmail'),direccion:v('cDir')};
+  if(!d.nombre||!d.documento){setMsg('msgCli','error','Nombre y documento son obligatorios.');return;}
+  setMsg('msgCli','info','Guardando en Sheets...');
+  llamarAppsScript('crearCliente', d,
+    function(res){
+      if(res&&res.success){
+        var id=res.id||String(SESSION.data.clientes.length+1);
+        SESSION.data.clientes.push([id,d.nombre,d.documento,d.telefono,d.correo,d.direccion]);
+        SESSION.data.resumen.totalClientes=SESSION.data.clientes.length;
+        toast('✅ Cliente guardado en Sheets');toggleForm('fCli');mostrarModulo('clientes');
+      }else setMsg('msgCli','error',res?res.message:'Error');
+    },
+    function(){
+      SESSION.data.clientes.push([String(Date.now()),d.nombre,d.documento,d.telefono,d.correo,d.direccion]);
+      toast('✅ Cliente agregado (demo)');toggleForm('fCli');mostrarModulo('clientes');
+    }
+  );
+};
+
+window.eliminarCliente=function(id){
+  if(!confirm('¿Eliminar cliente ID '+id+'?'))return;
+  llamarAppsScript('eliminarCliente', id,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.clientes=SESSION.data.clientes.filter(function(c){return c[0]!=id;});
+        SESSION.data.resumen.totalClientes=SESSION.data.clientes.length;
+        toast('🗑 Cliente eliminado de Sheets');mostrarModulo('clientes');
+      }else toast(res?res.message:'Error','error');
+    },
+    function(){
+      SESSION.data.clientes=SESSION.data.clientes.filter(function(c){return c[0]!=id;});
+      toast('🗑 Eliminado (demo)');mostrarModulo('clientes');
+    }
+  );
+};
+
+// ══════════════════════════════════════════════════
+// EMPLEADOS — CRUD completo
+// ══════════════════════════════════════════════════
+function renderEmpleados(d,u){
+  var esg=esGestor(u.rol);var rows=d.empleado||[];
+  var html='<div class="module-card"><h3>👥 Empleados</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tEmp\',this.value)">'+
+    (esg?'<button class="mini-btn" onclick="toggleForm(\'fEmp\')">+ Crear empleado</button>':'')+
+    '</div>';
+  if(esg){
+    html+='<div class="form-inline" id="fEmp"><div class="fi-grid">'+
+      '<input type="text" id="eNom" placeholder="Nombre completo">'+
+      '<input type="text" id="eCar" placeholder="Cargo">'+
+      '<input type="text" id="eSed" placeholder="Sede">'+
+      '<input type="text" id="eTel" placeholder="Teléfono">'+
+      '<input type="text" id="eEml" placeholder="Correo">'+
+      '</div><div class="fi-actions">'+
+      '<button class="mini-btn" onclick="crearEmpleado()">💾 Guardar</button>'+
+      '<button class="mini-btn secondary" onclick="toggleForm(\'fEmp\')">Cancelar</button>'+
+      '</div><div id="msgEmp" class="msg"></div></div>';
+  }
+  var h=(d.headers.empleado||[]).concat(esg?['Acciones']:[]);
+  var trows=rows.map(function(e){
+    var r=e.slice();
+    if(esg) r.push('<button class="mini-btn danger" style="padding:4px 8px;font-size:11px;" onclick="eliminarEmpleado(\''+e[0]+'\')">Eliminar</button>');
+    return r;
+  });
+  html+=tabla('tEmp',h,trows)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+window.crearEmpleado=function(){
+  var d={nombre:v('eNom'),cargo:v('eCar'),sede:v('eSed'),telefono:v('eTel'),correo:v('eEml')};
+  if(!d.nombre||!d.cargo){setMsg('msgEmp','error','Nombre y cargo son obligatorios.');return;}
+  setMsg('msgEmp','info','Guardando en Sheets...');
+  llamarAppsScript('crearEmpleado', d,
+    function(res){
+      if(res&&res.success){
+        var id=res.id||String(Date.now());
+        SESSION.data.empleado.push([id,d.nombre,d.cargo,d.sede,d.telefono,d.correo]);
+        SESSION.data.resumen.totalEmpleados=SESSION.data.empleado.length;
+        toast('✅ Empleado guardado en Sheets');toggleForm('fEmp');mostrarModulo('empleado');
+      }else setMsg('msgEmp','error',res?res.message:'Error');
+    },
+    function(){
+      SESSION.data.empleado.push([String(Date.now()),d.nombre,d.cargo,d.sede,d.telefono,d.correo]);
+      toast('✅ Empleado agregado (demo)');toggleForm('fEmp');mostrarModulo('empleado');
+    }
+  );
+};
+
+window.eliminarEmpleado=function(id){
+  if(!confirm('¿Eliminar empleado ID '+id+'?'))return;
+  llamarAppsScript('eliminarEmpleado', id,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.empleado=SESSION.data.empleado.filter(function(e){return e[0]!=id;});
+        toast('🗑 Empleado eliminado de Sheets');mostrarModulo('empleado');
+      }else toast(res?res.message:'Error','error');
+    },
+    function(){
+      SESSION.data.empleado=SESSION.data.empleado.filter(function(e){return e[0]!=id;});
+      toast('🗑 Eliminado (demo)');mostrarModulo('empleado');
+    }
+  );
+};
+
+// ══════════════════════════════════════════════════
+// INVENTARIO
+// ══════════════════════════════════════════════════
+function renderInventario(d,u){
+  var rows=d.inventario||[];
+  var bajos=rows.filter(function(r){return parseInt(r[2])<=parseInt(r[3]||0);});
+  var html='<div class="module-card"><h3>📊 Inventario</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tInv\',this.value)"></div>';
+  if(bajos.length) html+='<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:9px;padding:11px 15px;margin-bottom:13px;font-size:13px;color:#b45309;">⚠️ <strong>'+bajos.length+' producto(s) con stock bajo</strong></div>';
+  html+=tabla('tInv',d.headers.inventario,rows)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════
+// INFORMES + GRÁFICAS
+// ══════════════════════════════════════════════════
+function renderInformes(d,u){
+  var ventas=d.ventas||[];var esg=esGestor(u.rol);
+  var porMes={};
+  ventas.forEach(function(v){
+    var mes=(v[1]||'').substring(0,7)||'Sin fecha';
+    if(!porMes[mes])porMes[mes]={ventas:0,total:0};
+    porMes[mes].ventas++;porMes[mes].total+=(parseFloat(v[2])||0);
+  });
+  var meses=Object.keys(porMes).sort();var html='';
+  if(esg&&meses.length){
+    var maxT=Math.max.apply(null,meses.map(function(m){return porMes[m].total;}))||1;
+    html+='<div class="chart-wrap"><h3>📈 Ingresos por mes ($)</h3><div class="bar-chart">';
+    meses.forEach(function(m){var pct=Math.max(8,(porMes[m].total/maxT)*100);html+='<div class="bar-item"><div class="bar-val">$'+fn(porMes[m].total)+'</div><div class="bar" style="height:'+pct+'%"></div><div class="bar-label">'+m+'</div></div>';});
+    html+='</div></div>';
+    var maxV=Math.max.apply(null,meses.map(function(m){return porMes[m].ventas;}))||1;
+    html+='<div class="chart-wrap"><h3>📊 Cantidad ventas por mes</h3><div class="bar-chart">';
+    meses.forEach(function(m){var pct=Math.max(8,(porMes[m].ventas/maxV)*100);html+='<div class="bar-item"><div class="bar-val">'+porMes[m].ventas+'</div><div class="bar" style="height:'+pct+'%;background:linear-gradient(180deg,#60a5fa,#1d4ed8)"></div><div class="bar-label">'+m+'</div></div>';});
+    html+='</div></div>';
+  }
+  html+='<div class="module-card"><h3>📄 Informes</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tInf\',this.value)">'+
+    (esg?'<button class="mini-btn" onclick="toggleForm(\'fInf\')">+ Crear informe</button>':'')+
+    '</div>';
+  if(esg){
+    html+='<div class="form-inline" id="fInf"><div class="fi-grid">'+
+      '<input type="text" id="iT" placeholder="Tipo"><input type="text" id="iD" placeholder="Descripción"><input type="text" id="iR" placeholder="Responsable">'+
+      '</div><div class="fi-actions">'+
+      '<button class="mini-btn" onclick="crearInforme()">💾 Guardar</button>'+
+      '<button class="mini-btn secondary" onclick="toggleForm(\'fInf\')">Cancelar</button>'+
+      '</div><div id="msgInf" class="msg"></div></div>';
+  }
+  html+=tabla('tInf',d.headers.informes,d.informes)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+window.crearInforme=function(){
+  var d={tipo:v('iT'),descripcion:v('iD'),responsable:v('iR')};
+  setMsg('msgInf','info','Guardando...');
+  llamarAppsScript('crearInforme', d,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.informes.unshift([new Date().toISOString().substring(0,10),d.tipo,d.descripcion,d.responsable]);
+        toast('✅ Informe guardado en Sheets');toggleForm('fInf');mostrarModulo('informes');
+      }else setMsg('msgInf','error',res?res.message:'Error');
+    },
+    function(){
+      SESSION.data.informes.unshift([new Date().toISOString().substring(0,10),d.tipo,d.descripcion,d.responsable]);
+      toast('✅ Informe guardado (demo)');toggleForm('fInf');mostrarModulo('informes');
+    }
+  );
+};
+
+// ══════════════════════════════════════════════════
+// SEDES — CRUD completo
+// ══════════════════════════════════════════════════
+function renderSedes(d,u){
+  var esg=esGestor(u.rol);var rows=d.sedes||[];
+  var html='<div class="module-card"><h3>🏢 Sedes</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tSedes\',this.value)">'+
+    (esg?'<button class="mini-btn" onclick="toggleForm(\'fSede\')">+ Crear sede</button>':'')+
+    '</div>';
+  if(esg){
+    html+='<div class="form-inline" id="fSede"><div class="fi-grid">'+
+      '<input type="text" id="sId" placeholder="ID sede"><input type="text" id="sNom" placeholder="Nombre sede">'+
+      '<input type="text" id="sCiu" placeholder="Ciudad"><input type="text" id="sDir" placeholder="Dirección">'+
+      '<input type="text" id="sEnc" placeholder="Encargado">'+
+      '</div><div class="fi-actions">'+
+      '<button class="mini-btn" onclick="crearSede()">💾 Guardar</button>'+
+      '<button class="mini-btn secondary" onclick="toggleForm(\'fSede\')">Cancelar</button>'+
+      '</div><div id="msgSede" class="msg"></div></div>';
+  }
+  var h=(d.headers.sedes||[]).concat(esg?['Acciones']:[]);
+  var trows=rows.map(function(s){
+    var r=s.slice();
+    if(esg) r.push('<button class="mini-btn danger" style="padding:4px 8px;font-size:11px;" onclick="eliminarSede(\''+s[0]+'\')">Eliminar</button>');
+    return r;
+  });
+  html+=tabla('tSedes',h,trows)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+window.crearSede=function(){
+  var d={id:v('sId'),nombre:v('sNom'),ciudad:v('sCiu'),direccion:v('sDir'),encargado:v('sEnc')};
+  if(!d.id||!d.nombre||!d.ciudad){setMsg('msgSede','error','ID, nombre y ciudad son obligatorios.');return;}
+  setMsg('msgSede','info','Guardando en Sheets...');
+  llamarAppsScript('crearSede', d,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.sedes.push([d.id,d.nombre,d.ciudad,d.direccion,d.encargado]);
+        SESSION.data.resumen.totalSedes=SESSION.data.sedes.length;
+        toast('✅ Sede guardada en Sheets');toggleForm('fSede');mostrarModulo('sedes');
+      }else setMsg('msgSede','error',res?res.message:'Error');
+    },
+    function(){
+      SESSION.data.sedes.push([d.id,d.nombre,d.ciudad,d.direccion,d.encargado]);
+      toast('✅ Sede creada (demo)');toggleForm('fSede');mostrarModulo('sedes');
+    }
+  );
+};
+
+window.eliminarSede=function(id){
+  if(!confirm('¿Eliminar sede ID '+id+'?'))return;
+  llamarAppsScript('eliminarSede', id,
+    function(res){
+      if(res&&res.success){
+        SESSION.data.sedes=SESSION.data.sedes.filter(function(s){return s[0]!=id;});
+        SESSION.data.resumen.totalSedes=SESSION.data.sedes.length;
+        toast('🗑 Sede eliminada de Sheets');mostrarModulo('sedes');
+      }else toast(res?res.message:'Error','error');
+    },
+    function(){
+      SESSION.data.sedes=SESSION.data.sedes.filter(function(s){return s[0]!=id;});
+      toast('🗑 Eliminada (demo)');mostrarModulo('sedes');
+    }
+  );
+};
+
+// ══════════════════════════════════════════════════
+// USUARIOS
+// ══════════════════════════════════════════════════
+function renderUsuarios(d,u){
+  var html='<div class="module-card"><h3>🔑 Usuarios</h3>'+
+    '<div class="toolbar"><input type="text" placeholder="Buscar..." onkeyup="filtrarTabla(\'tUsr\',this.value)"></div>'+
+    tabla('tUsr',d.headers.usuarios,d.usuarios)+'</div>';
+  document.getElementById('contenidoModulo').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════
+function cardStat(t,n){return'<div class="stat-card"><h3>'+t+'</h3><div class="num">'+n+'</div></div>';}
+
+function cerrarSesion(){
+  SESSION=null;
+  ['usuario','password'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('panelScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('tabLogin').classList.add('active');
+  document.getElementById('tabReg').classList.remove('active');
+  document.getElementById('loginBox').style.display='block';
+  document.getElementById('regBox').style.display='none';
+  var el=document.getElementById('msgLogin');if(el){el.className='msg';el.textContent='';}
+}
+</script>
+</body>
+</html>
