@@ -292,18 +292,24 @@ function imgTag(url,w,h){
 }
 
 // ══════════════════════════════════════════════════
-// LLAMADA CENTRAL — reemplaza google.script.run
+// LLAMADA CENTRAL — Fetch POST a Apps Script con CORS
 // ══════════════════════════════════════════════════
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby5sJD1zP1mD_48qQ3dZKueHYEnkXSwJxcJ50ghJNEAguFUB012N_PYIyJe_PgfcQLuog/exec';
 
 async function llamarAppsScript(nombreFuncion, datos, ok, err) {
   try {
+    const payload = {
+      accion: nombreFuncion,
+      datos: datos
+    };
+
     const response = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({
-        accion: nombreFuncion,
-        datos: datos
-      })
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
     });
 
     const res = await response.json();
@@ -586,28 +592,120 @@ window.filtrarEstadoVentas=function(val){
 };
 
 window.crearVenta=function(){
-  var btn=document.querySelector('#fVenta .mini-btn');if(btn)btn.disabled=true;
-  var d={
-    idProducto:v('vtProducto'),
-    cantidad:Number(v('vtCantidad')),
-    cliente:v('vtNombreCliente'),
-    idCliente:v('vtCliente') || '1',
-    usuarioVendedor:v('vtVendedor') || SESSION.user.usuario
+  var btnSubmit = document.querySelector('#fVenta .mini-btn');
+  
+  // ─ VALIDACIÓN VISUAL BÁSICA ─────────────────────────────────
+  var idProducto = v('vtProducto').trim();
+  var cantidad = Number(v('vtCantidad'));
+  var cliente = v('vtNombreCliente').trim();
+  var idCliente = v('vtCliente').trim() || '1';
+  var vendedor = v('vtVendedor').trim() || SESSION.user.usuario;
+
+  if (!idProducto) {
+    setMsg('msgVenta', 'error', 'ID producto es obligatorio.');
+    return;
+  }
+  if (!cliente) {
+    setMsg('msgVenta', 'error', 'Nombre del cliente es obligatorio.');
+    return;
+  }
+  if (!cantidad || cantidad <= 0) {
+    setMsg('msgVenta', 'error', 'La cantidad debe ser mayor a 0.');
+    return;
+  }
+
+  // ─ DESACTIVAR BOTÓN DURANTE FETCH ──────────────────────────
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = '⏳ Procesando...';
+  }
+
+  // ─ PAYLOAD EXACTO SEGÚN SPECS ──────────────────────────────
+  var datos = {
+    idProducto: idProducto,
+    cantidad: parseInt(cantidad),
+    cliente: cliente,
+    idCliente: idCliente,
+    usuarioVendedor: vendedor
   };
-  if(!d.idProducto||!d.cantidad||!d.cliente){setMsg('msgVenta','error','ID producto, cantidad y cliente son obligatorios.');if(btn)btn.disabled=false;return;}
-  setMsg('msgVenta','info','Ejecutando SP de venta y trigger de inventario...');
-  llamarAppsScript('crearVenta', d,
-    function(res){
-      if(res&&res.success){
-        toast('✅ '+res.message);
+
+  setMsg('msgVenta', 'info', '⏳ Procesando venta...');
+
+  // ─ FETCH POST CON CORS ────────────────────────────────────
+  llamarAppsScript('crearVenta', datos,
+    function(res) {
+      // ─ REACTIVAR BOTÓN ─────────────────────────────────────
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = '💾 Guardar venta completa';
+      }
+
+      if (res && res.success) {
+        // ─ ÉXITO: Mostrar mensaje del servidor ───────────────
+        toast('✅ ' + (res.message || 'Venta registrada'));
+        setMsg('msgVenta', 'ok', '✅ ' + res.message);
+
+        // ─ REFRESCO AUTOMÁTICO DE ESTADOS (SIN RECARGAR PÁGINA) ─
+        // Actualizar stock del producto con el valor exacto del servidor
+        if (res.stockRestante !== undefined) {
+          var producto = SESSION.data.productos.find(function(p) {
+            return p[0] == idProducto;
+          });
+          if (producto) {
+            // Actualizar stock del producto
+            producto[5] = String(res.stockRestante);
+          }
+
+          // Actualizar inventario
+          if (SESSION.data.inventario) {
+            var invItem = SESSION.data.inventario.find(function(inv) {
+              return inv[0] == idProducto;
+            });
+            if (invItem) {
+              invItem[2] = String(res.stockRestante);
+            }
+          }
+        }
+
+        // Agregar nueva venta al estado local
+        var nuevaVenta = [
+          res.id || String(SESSION.data.ventas.length + 1),
+          new Date().toISOString().substring(0, 10),
+          res.total || 0,
+          'completada',
+          idCliente,
+          vendedor,
+          idProducto
+        ];
+        SESSION.data.ventas.unshift(nuevaVenta);
+        SESSION.data.resumen.totalVentas = SESSION.data.ventas.length;
+
+        // Limpiar formulario
+        document.getElementById('vtProducto').value = '';
+        document.getElementById('vtCantidad').value = '';
+        document.getElementById('vtNombreCliente').value = '';
+        document.getElementById('vtCliente').value = '1';
+
+        // Cerrar formulario y refrescar vista
         toggleForm('fVenta');
-        recargarYRefrescar('ventas');
-      }else{
-        setMsg('msgVenta','error',res?res.message:'Error al guardar');if(btn)btn.disabled=false;
+        mostrarModulo('ventas');
+
+      } else {
+        // ─ ERROR: Mostrar mensaje del servidor (stock insuficiente, etc) ─
+        var errorMsg = res ? (res.message || 'Error desconocido') : 'Error al conectar con el servidor';
+        setMsg('msgVenta', 'error', '❌ ' + errorMsg);
+        toast(errorMsg, 'error');
       }
     },
-    function(e){
-      setMsg('msgVenta','error',e.message||'No se pudo conectar con Apps Script.');if(btn)btn.disabled=false;
+    function(e) {
+      // ─ ERROR DE RED ────────────────────────────────────────
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = '💾 Guardar venta completa';
+      }
+      var errorMsg = e.message || 'No se pudo conectar con Google Apps Script';
+      setMsg('msgVenta', 'error', '❌ ' + errorMsg);
+      toast(errorMsg, 'error');
     }
   );
 };
@@ -756,24 +854,54 @@ window.comprarProducto=function(idProducto){
   var cantidad=Number(prompt('Cantidad a comprar'));
   if(!cantidad||cantidad<=0){toast('Cantidad inválida','error');return;}
 
-  llamarAppsScript('crearVenta',{
-    idProducto:idProducto,
-    cantidad:cantidad,
-    cliente:cliente,
-    idCliente:SESSION.user.idRelacion || '1',
-    usuarioVendedor:SESSION.user.usuario
-  },
-  function(res){
-    if(res&&res.success){
-      toast('✅ '+res.message);
-      recargarYRefrescar('productos');
-    }else{
-      toast(res?res.message:'Error en la venta','error');
+  // PAYLOAD EXACTO según especificaciones
+  var datos = {
+    idProducto: idProducto,
+    cantidad: parseInt(cantidad),
+    cliente: cliente,
+    idCliente: SESSION.user.idRelacion || '1',
+    usuarioVendedor: SESSION.user.usuario
+  };
+
+  toast('⏳ Procesando compra...');
+
+  llamarAppsScript('crearVenta', datos,
+    function(res){
+      if(res&&res.success){
+        toast('✅ ' + res.message);
+        
+        // REFRESCO AUTOMÁTICO - actualizar producto stock
+        if(res.stockRestante !== undefined){
+          var producto = SESSION.data.productos.find(function(p){return p[0]==idProducto;});
+          if(producto) producto[5] = String(res.stockRestante);
+          
+          if(SESSION.data.inventario){
+            var invItem = SESSION.data.inventario.find(function(inv){return inv[0]==idProducto;});
+            if(invItem) invItem[2] = String(res.stockRestante);
+          }
+        }
+        
+        // Agregar nueva venta al estado
+        SESSION.data.ventas.unshift([
+          res.id || String(SESSION.data.ventas.length+1),
+          new Date().toISOString().substring(0,10),
+          res.total || 0,
+          'completada',
+          SESSION.user.idRelacion || '1',
+          SESSION.user.usuario,
+          idProducto
+        ]);
+        SESSION.data.resumen.totalVentas = SESSION.data.ventas.length;
+        
+        recargarYRefrescar('productos');
+      }else{
+        toast(res?res.message:'Error en la venta','error');
+      }
+    },
+    function(e){
+      toast(e.message||'No se pudo conectar con Apps Script','error');
     }
-  },
-  function(e){
-    toast(e.message||'No se pudo conectar con Apps Script','error');
-  });
+  );
 };
 
 window.filtrarCatalogo=function(){
