@@ -678,6 +678,39 @@ window.crearVenta=function(){
           idProducto
         ];
         SESSION.data.ventas.unshift(nuevaVenta);
+
+        // ─ AGREGAR MOVIMIENTO KARDEX AL INVENTARIO ────────────────
+        // Estructura exacta del backend: [id_inventario, id_producto, producto, stock_actual, cantidad_movida, tipo_movimiento, fecha, cliente, id_venta]
+        if (SESSION.data.inventario && res.id !== undefined) {
+          var nombreProducto = '';
+          var productoDatos = SESSION.data.productos.find(function(p) {
+            return p[0] == idProducto;
+          });
+          if (productoDatos) {
+            // Concatenar marca + modelo (índices 1 y 2)
+            nombreProducto = String(productoDatos[1] || '') + ' ' + String(productoDatos[2] || '');
+            nombreProducto = nombreProducto.trim();
+          }
+
+          var fechaHoy = new Date().toISOString().substring(0, 10);
+          var idInventarioMov = SESSION.data.inventario.length > 0 
+            ? Math.max.apply(null, SESSION.data.inventario.map(function(inv) { return parseInt(inv[0]) || 0; })) + 1
+            : 1;
+
+          var movimientoKardex = [
+            String(idInventarioMov),           // id_inventario
+            idProducto,                        // id_producto
+            nombreProducto,                    // producto
+            String(res.stockRestante),         // stock_actual (remanente post-venta)
+            String(cantidad),                  // cantidad_movida
+            'salida',                          // tipo_movimiento
+            fechaHoy,                          // fecha
+            cliente,                           // cliente
+            String(res.id)                     // id_venta
+          ];
+
+          SESSION.data.inventario.unshift(movimientoKardex);
+        }
         SESSION.data.resumen.totalVentas = SESSION.data.ventas.length;
 
         // Limpiar formulario
@@ -892,6 +925,38 @@ window.comprarProducto=function(idProducto){
           idProducto
         ]);
         SESSION.data.resumen.totalVentas = SESSION.data.ventas.length;
+        
+        // AGREGAR MOVIMIENTO KARDEX AL INVENTARIO
+        // Estructura exacta del backend: [id_inventario, id_producto, producto, stock_actual, cantidad_movida, tipo_movimiento, fecha, cliente, id_venta]
+        if (SESSION.data.inventario && res.id !== undefined) {
+          var nombreProducto = '';
+          var productoDatos = SESSION.data.productos.find(function(p) {
+            return p[0] == idProducto;
+          });
+          if (productoDatos) {
+            nombreProducto = String(productoDatos[1] || '') + ' ' + String(productoDatos[2] || '');
+            nombreProducto = nombreProducto.trim();
+          }
+
+          var fechaHoy = new Date().toISOString().substring(0, 10);
+          var idInventarioMov = SESSION.data.inventario.length > 0 
+            ? Math.max.apply(null, SESSION.data.inventario.map(function(inv) { return parseInt(inv[0]) || 0; })) + 1
+            : 1;
+
+          var movimientoKardex = [
+            String(idInventarioMov),           // id_inventario
+            idProducto,                        // id_producto
+            nombreProducto,                    // producto
+            String(res.stockRestante),         // stock_actual (remanente post-venta)
+            String(cantidad),                  // cantidad_movida
+            'salida',                          // tipo_movimiento
+            fechaHoy,                          // fecha
+            cliente,                           // cliente
+            String(res.id)                     // id_venta
+          ];
+
+          SESSION.data.inventario.unshift(movimientoKardex);
+        }
         
         recargarYRefrescar('productos');
       }else{
